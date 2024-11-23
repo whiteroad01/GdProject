@@ -10,40 +10,53 @@ from matplotlib.ticker import FuncFormatter
 from matplotlib.colors import BoundaryNorm
 
 
-def get_substructure_cid(names):
-    cids = {i:j for i,j in zip(names, range(len(names)))}
+def get_compounds(indices, result='cid', identifier='name') -> list: 
+    data = {i:j for i,j in zip(indices, range(len(indices)))}
     threads = []
 
-    def CIDFromName(name):
+    def get_compound(index):
         while True:
-            try:
-                compound = pbp.get_compounds(name, 'name')[0]
-                break
-            except IndexError:
+            if identifier == 'name':
+                name = index
                 try:
-                    compound = pbp.get_compounds(name.split(' ')[0], 'name')[0]
+                    compound = pbp.get_compounds(name, 'name')[0]
                     break
                 except IndexError:
                     try:
-                        compound = pbp.get_compounds(name.split('（')[0], 'name')[0]
+                        compound = pbp.get_compounds(name.split(' ')[0], 'name')[0]
                         break
                     except IndexError:
-                        print('{} is not found'.format(name))
-                        return None
+                        try:
+                            compound = pbp.get_compounds(name.split('（')[0], 'name')[0]
+                            break
+                        except IndexError:
+                            print('{} is not found'.format(name))
+                            return None
+                        except pbp.PubChemHTTPError:
+                            time.sleep(0.1)
                     except pbp.PubChemHTTPError:
-                        time.sleep(0.1)
+                        time.sleep(0.1) 
                 except pbp.PubChemHTTPError:
                     time.sleep(0.1) 
-            except pbp.PubChemHTTPError:
-                time.sleep(0.1) 
-        cids[name] = compound.cid
+            else:
+                try:
+                    compound = pbp.get_compounds(index, identifier)[0]
+                    break
+                except IndexError:
+                    print('this compound is not find, please check out your identifier.')
+                except pbp.PubChemHTTPError:
+                    time.sleep(0.1)
+        if result == 'cid':
+            data[index] = compound.cid
+        elif result == 'fingerprint':
+            data[index] = compound.fingerprint
 
-    for i,s in enumerate(names):
-        threads.append(threading.Thread(target=CIDFromName, args=(s,)))
+    for i,s in enumerate(indices):
+        threads.append(threading.Thread(target=get_compound, args=(s,)))
         threads[i].start()
     for t in threads:
         t.join()
-    return list(cids.values())
+    return list(data.values())
 
 def notxa0(names):
     res = []
