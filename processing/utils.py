@@ -78,6 +78,9 @@ def strtonp(s):
     return numbers
 
 def get_CI(df, cell_lines=None):
+    """ 
+    cell_lines: 'BxPC3', 'AsPC1', 'A2780 CS', 'A2780 CR', 'A549', 'HCT116', 'cid'
+    """
     CI = []
     titles= df.columns.to_list()[4:-1]
     if cell_lines == None:
